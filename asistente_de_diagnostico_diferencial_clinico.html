@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente de Diagnóstico Diferencial Clínico</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header & Disclaimer Banner -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-indigo-600 rounded-lg text-white shadow">
+          <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">PsyDiff <span class="text-indigo-400 text-xs font-semibold px-2 py-0.5 rounded border border-indigo-500/30 bg-indigo-500/10">Herramienta Docente</span></h1>
+          <p class="text-xs text-slate-400">Asistente de Diagnóstico Diferencial por Descarte Lógico</p>
+        </div>
+      </div>
+      <button onclick="resetAll()" class="flex items-center space-x-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700 transition">
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        <span>Reiniciar Filtros</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Academic Disclaimer Banner -->
+  <div class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-900 flex items-center justify-center gap-2 text-center">
+    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+    <span><strong>Aviso Clínico-Académico:</strong> Esta herramienta es un recurso meramente complementario de apoyo pedagógico. <strong>No emite diagnósticos ni reemplaza la evaluación o el criterio del profesional de la salud mental.</strong></span>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Inputs & Controls (7 Cols) -->
+    <section class="lg:col-span-7 space-y-6">
+      
+      <!-- Time Evolution Control Card -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+          <i data-lucide="clock" class="w-5 h-5 text-indigo-600"></i>
+          <h2 class="font-semibold text-slate-900 text-base">1. Tiempo de Evolución del Cuadro</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Duración observada</label>
+            <div class="flex rounded-md shadow-sm">
+              <input type="number" id="timeValue" value="75" min="1" oninput="evaluar()" class="w-full rounded-l-lg border-slate-300 border p-2 text-slate-900 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <select id="timeUnit" onchange="evaluar()" class="rounded-r-lg border-y border-r border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500">
+                <option value="dias">Días</option>
+                <option value="semanas">Semanas</option>
+                <option value="meses" selected>Meses</option>
+                <option value="anios">Años</option>
+              </select>
+            </div>
+          </div>
+          <div class="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
+            <span class="text-xs text-indigo-600 font-medium block">Total calculado:</span>
+            <span id="totalDaysDisplay" class="text-lg font-bold text-indigo-900">75 días</span>
+            <span class="text-xs text-slate-500 block text-balance">Los trastornos fuera de este rango temporal se descartarán.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Symptom Selector Card -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="list-checks" class="w-5 h-5 text-indigo-600"></i>
+            <h2 class="font-semibold text-slate-900 text-base">2. Matriz de Sintomatología</h2>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="flex items-center gap-1 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-slate-200 border border-slate-400"></span> Neutro</span>
+            <span class="flex items-center gap-1 text-emerald-700"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Presente</span>
+            <span class="flex items-center gap-1 text-rose-700"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Descartado</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 mb-4">
+          Haz un clic para marcar como <strong class="text-emerald-600">Presente (✔)</strong> o dos clics para marcar como <strong class="text-rose-600">Descartado (✖)</strong>.
+        </p>
+
+        <!-- Categories Container -->
+        <div id="symptomsCategories" class="space-y-5">
+          <!-- Dinámicamente generado por JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Results & Exclusion Logic (5 Cols) -->
+    <section class="lg:col-span-5 space-y-6">
+      
+      <!-- Summary Dashboard Bar -->
+      <div class="bg-slate-900 text-white p-4 rounded-xl shadow-sm flex justify-around text-center">
+        <div>
+          <span class="text-xs text-slate-400 uppercase tracking-wider block font-medium">Viables</span>
+          <span id="countViables" class="text-2xl font-bold text-emerald-400">0</span>
+        </div>
+        <div class="w-px bg-slate-800"></div>
+        <div>
+          <span class="text-xs text-slate-400 uppercase tracking-wider block font-medium">Descartados</span>
+          <span id="countDiscarded" class="text-2xl font-bold text-rose-400">0</span>
+        </div>
+        <div class="w-px bg-slate-800"></div>
+        <div>
+          <span class="text-xs text-slate-400 uppercase tracking-wider block font-medium">Total Base</span>
+          <span id="countTotal" class="text-2xl font-bold text-slate-300">0</span>
+        </div>
+      </div>
+
+      <!-- Compatible / Remaining Disorders ("Fantasmas" Viables) -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+          Trastornos Compatibles (Diagnóstico Diferencial)
+        </h3>
+        <div id="viableContainer" class="space-y-3">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <!-- Discarded Disorders Panel (Motivos de Exclusión) -->
+      <div class="space-y-3 pt-2">
+        <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+          <i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i>
+          Trastornos Descartados y Motivo de Exclusión
+        </h3>
+        <div id="discardedContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4">
+      PsyDiff Matrix &copy; 2026 — Herramienta interactiva para análisis psicopatológico y diagnóstico diferencial.
+    </div>
+  </footer>
+
+  <script>
+    /* =========================================================================
+       BASE DE DATOS CLÍNICA (ESTRUCTURA DE TRASTORNOS Y SÍNTOMAS)
+       ========================================================================= */
+
+    const CATEGORIAS_SINTOMAS = {
+      psicotico: {
+        titulo: "Sintomatología Psicótica",
+        icono: "eye-off",
+        sintomas: [
+          { id: "alucinaciones", nombre: "Alucinaciones (Auditivas/Visuales/etc.)" },
+          { id: "delirios", nombre: "Ideas Delirantes (Persecutorias, Místicas, etc.)" },
+          { id: "lenguaje_desorganizado", nombre: "Lenguaje / Discurso Desorganizado" },
+          { id: "conducta_catatonica", nombre: "Comportamiento Catatónico o Muy Desorganizado" },
+          { id: "sintomas_negativos", nombre: "Síntomas Negativos (Aplanamiento afectivo, Avolición, Alogia)" }
+        ]
+      },
+      afectivo: {
+        titulo: "Síntomas Afectivos y Estado de Ánimo",
+        icono: "heart-pulse",
+        sintomas: [
+          { id: "animo_depresivo", nombre: "Estado de Ánimo Deprimido la mayor parte del día" },
+          { id: "anhedonia", nombre: "Anhedonia (Pérdida marcada de interés/placer)" },
+          { id: "labilidad_afectiva", nombre: "Labilidad Afectiva o Respuestas Emocionales Intensas" },
+          { id: "euforia_expansividad", nombre: "Estado de Ánimo Eufórico, Expansivo o Irritable" },
+          { id: "sentimiento_inutilidad", nombre: "Sentimientos de Inutilidad o Culpa Excesiva" }
+        ]
+      },
+      somatico_conductual: {
+        titulo: "Sintomatología Somática y de Estrés",
+        icono: "activity",
+        sintomas: [
+          { id: "malestar_estresor", nombre: "Malestar Desproporcionado a un Estresor Identificable" },
+          { id: "alteracion_sueño_peso", nombre: "Alteraciones Significativas del Sueño o Peso/Apetito" },
+          { id: "fatiga_energia", nombre: "Pérdida de Energía o Fatiga Casi Diaria" },
+          { id: "disminucion_concentracion", nombre: "Disminución de Capacidad para Pensar o Concentrarse" }
+        ]
+      }
+    };
+
+    const BASE_TRASTORNOS = [
+      {
+        id: "t_psicotico_breve",
+        nombre: "Trastorno Psicótico Breve",
+        categoria: "Espectro de la Esquizofrenia",
+        duracion_min_dias: 1,
+        duracion_max_dias: 30,
+        sintomas_nucleares: ["alucinaciones", "delirios", "lenguaje_desorganizado"],
+        sintomas_secundarios: ["conducta_catatonica"],
+        min_sintomas_requeridos: 1,
+        descripcion: "Presencia de al menos un síntoma psicótico positivo. Duración entre 1 día y 1 mes con retorno completo al nivel de funcionamiento previo."
+      },
+      {
+        id: "t_esquizofreniforme",
+        nombre: "Trastorno Esquizofreniforme",
+        categoria: "Espectro de la Esquizofrenia",
+        duracion_min_dias: 30,
+        duracion_max_dias: 180,
+        sintomas_nucleares: ["alucinaciones", "delirios", "lenguaje_desorganizado"],
+        sintomas_secundarios: ["conducta_catatonica", "sintomas_negativos"],
+        min_sintomas_requeridos: 2,
+        descripcion: "Sintomatología idéntica a la esquizofrenia pero cuya duración abarca al menos 1 mes y menos de 6 meses."
+      },
+      {
+        id: "esquizofrenia",
+        nombre: "Esquizofrenia",
+        categoria: "Espectro de la Esquizofrenia",
+        duracion_min_dias: 180,
+        duracion_max_dias: null,
+        sintomas_nucleares: ["alucinaciones", "delirios", "lenguaje_desorganizado"],
+        sintomas_secundarios: ["conducta_catatonica", "sintomas_negativos"],
+        min_sintomas_requeridos: 2,
+        descripcion: "Cuadro persistente por al menos 6 meses con deterioro funcional significativo en el trabajo, relaciones o autocuidado."
+      },
+      {
+        id: "t_depresivo_mayor",
+        nombre: "Trastorno Depresivo Mayor",
+        categoria: "Trastornos del Estado de Ánimo",
+        duracion_min_dias: 14,
+        duracion_max_dias: null,
+        sintomas_nucleares: ["animo_depresivo", "anhedonia"],
+        sintomas_secundarios: ["alteracion_sueño_peso", "fatiga_energia", "sentimiento_inutilidad", "disminucion_concentracion"],
+        min_sintomas_requeridos: 5,
+        descripcion: "Requiere al menos 5 síntomas durante 2 semanas, siendo obligatorio presentar Ánimo Deprimido o Anhedonia."
+      },
+      {
+        id: "t_adaptativo_depresivo",
+        nombre: "Trastorno Adaptativo con Ánimo Depresivo",
+        categoria: "Trastornos Relacionados con Trauma y Estrés",
+        duracion_min_dias: 1,
+        duracion_max_dias: 180,
+        sintomas_nucleares: ["malestar_estresor", "animo_depresivo"],
+        sintomas_secundarios: ["fatiga_energia", "alteracion_sueño_peso"],
+        min_sintomas_requeridos: 2,
+        descripcion: "Respuesta emocional o conductual a un factor de estrés identificable que ocurre en los 3 meses posteriores al inicio del estresor."
+      }
+    ];
+
+    // ESTADO DE LA APLICACIÓN
+    // Estado de síntoma: 0 = neutro, 1 = presente, 2 = descartado
+    let estadoSintomas = {};
+
+    // Inicializar estados
+    Object.keys(CATEGORIAS_SINTOMAS).forEach(cat => {
+      CATEGORIAS_SINTOMAS[cat].sintomas.forEach(s => {
+        estadoSintomas[s.id] = 0;
+      });
+    });
+
+    // Renderizar Selector de Síntomas
+    function renderSymptomSelector() {
+      const container = document.getElementById('symptomsCategories');
+      container.innerHTML = '';
+
+      Object.keys(CATEGORIAS_SINTOMAS).forEach(catKey => {
+        const cat = CATEGORIAS_SINTOMAS[catKey];
+        
+        const catDiv = document.createElement('div');
+        catDiv.className = 'border border-slate-200 rounded-lg p-3 bg-slate-50/50';
+
+        const header = `
+          <div class="flex items-center space-x-2 text-slate-800 font-semibold text-xs uppercase tracking-wider mb-2.5">
+            <i data-lucide="${cat.icono}" class="w-4 h-4 text-indigo-500"></i>
+            <span>${cat.titulo}</span>
+          </div>
+        `;
+
+        let buttonsHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+
+        cat.sintomas.forEach(sintoma => {
+          const estado = estadoSintomas[sintoma.id];
+          let bgClass = "bg-white border-slate-200 text-slate-700 hover:bg-slate-100";
+          let badgeIcon = `<span class="w-3.5 h-3.5 rounded border border-slate-300 inline-block flex-shrink-0"></span>`;
+
+          if (estado === 1) { // Presente
+            bgClass = "bg-emerald-50 border-emerald-300 text-emerald-900 font-medium ring-1 ring-emerald-400";
+            badgeIcon = `<i data-lucide="check-circle text-emerald-600" class="w-4 h-4 flex-shrink-0"></i>`;
+          } else if (estado === 2) { // Descartado
+            bgClass = "bg-rose-50 border-rose-300 text-rose-900 line-through text-opacity-70 ring-1 ring-rose-300";
+            badgeIcon = `<i data-lucide="x-circle text-rose-500" class="w-4 h-4 flex-shrink-0"></i>`;
+          }
+
+          buttonsHTML += `
+            <button onclick="toggleSintoma('${sintoma.id}')" class="flex items-center justify-between p-2 rounded-md border text-left text-xs transition duration-150 ${bgClass}">
+              <span class="pr-2">${sintoma.nombre}</span>
+              ${badgeIcon}
+            </button>
+          `;
+        });
+
+        buttonsHTML += '</div>';
+
+        catDiv.innerHTML = header + buttonsHTML;
+        container.appendChild(catDiv);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Cambiar estado de síntoma
+    function toggleSintoma(id) {
+      estadoSintomas[id] = (estadoSintomas[id] + 1) % 3;
+      renderSymptomSelector();
+      evaluar();
+    }
+
+    // Resetear todo
+    function resetAll() {
+      Object.keys(estadoSintomas).forEach(id => estadoSintomas[id] = 0);
+      document.getElementById('timeValue').value = 75;
+      document.getElementById('timeUnit').value = 'meses';
+      renderSymptomSelector();
+      evaluar();
+    }
+
+    // Calcular días a partir de unidad seleccionada
+    function obtenerDiasCalculados() {
+      const val = parseFloat(document.getElementById('timeValue').value) || 0;
+      const unit = document.getElementById('timeUnit').value;
+
+      switch(unit) {
+        case 'dias': return val;
+        case 'semanas': return val * 7;
+        case 'meses': return val * 30;
+        case 'anios': return val * 365;
+        default: return val;
+      }
+    }
+
+    /* =========================================================================
+       ALGORITMO DE FILTRADO Y DIAGNÓSTICO DIFERENCIAL
+       ========================================================================= */
+
+    function evaluar() {
+      const dias = obtenerDiasCalculados();
+      document.getElementById('totalDaysDisplay').innerText = `${dias} días (~${(dias/30).toFixed(1)} meses)`;
+
+      const sintomasPresentes = Object.keys(estadoSintomas).filter(id => estadoSintomas[id] === 1);
+      const sintomasDescartados = Object.keys(estadoSintomas).filter(id => estadoSintomas[id] === 2);
+
+      const viables = [];
+      const descartados = [];
+
+      BASE_TRASTORNOS.forEach(trastorno => {
+        let motivoExclusion = null;
+
+        // 1. FILTRO DE TIEMPO
+        if (dias < trastorno.duracion_min_dias) {
+          motivoExclusion = `Tiempo de evolución insuficiente (${dias} días observados vs. mínimo de ${trastorno.duracion_min_dias} días requeridos).`;
+        } else if (trastorno.duracion_max_dias !== null && dias > trastorno.duracion_max_dias) {
+          motivoExclusion = `Supera el límite temporal máximo (${dias} días observados vs. máximo de ${trastorno.duracion_max_dias} días).`;
+        }
+
+        // 2. FILTRO DE SÍNTOMA OBLIGATORIO / DESCARTE DIRECTO
+        if (!motivoExclusion) {
+          // Si el usuario marcó activamente como "Descartado" un síntoma nuclear indispensable
+          const tieneNuclearDescartado = trastorno.sintomas_nucleares.every(s => sintomasDescartados.includes(s));
+          if (tieneNuclearDescartado && trastorno.sintomas_nucleares.length > 0) {
+            motivoExclusion = `Se descartó explícitamente el síntoma nuclear obligatorio para este diagnóstico.`;
+          }
+        }
+
+        // 3. UMBRAL MÍNIMO DE SÍNTOMAS (Solo evalúa si se han seleccionado síntomas)
+        const todosPosibles = [...trastorno.sintomas_nucleares, ...trastorno.sintomas_secundarios];
+        const presentesCoincidentes = sintomasPresentes.filter(s => todosPosibles.includes(s));
+
+        if (!motivoExclusion && sintomasPresentes.length > 0) {
+          // Evaluar si cumple con al menos un síntoma nuclear si el trastorno los requiere
+          const cumpleNuclear = trastorno.sintomas_nucleares.some(s => sintomasPresentes.includes(s));
+          if (trastorno.sintomas_nucleares.length > 0 && !cumpleNuclear) {
+            motivoExclusion = `Falta al menos uno de los síntomas nucleares característicos.`;
+          } else if (presentesCoincidentes.length < trastorno.min_sintomas_requeridos) {
+            motivoExclusion = `Criterios cuantitativos insuficientes (${presentesCoincidentes.length} de ${trastorno.min_sintomas_requeridos} síntomas requeridos).`;
+          }
+        }
+
+        // CALCULAR PORCENTAJE DE MATCH
+        const totalMatrizTrastorno = todosPosibles.length;
+        const porcentaje = Math.round((presentesCoincidentes.length / totalMatrizTrastorno) * 100);
+
+        if (!motivoExclusion) {
+          viables.push({
+            ...trastorno,
+            coincidenciasCount: presentesCoincidentes.length,
+            porcentaje
+          });
+        } else {
+          descartados.push({
+            ...trastorno,
+            motivoExclusion,
+            porcentaje
+          });
+        }
+      });
+
+      // Ordenar viables por porcentaje de coincidencia
+      viables.sort((a, b) => b.porcentaje - a.porcentaje);
+
+      renderResultados(viables, descartados);
+    }
+
+    function renderResultados(viables, descartados) {
+      document.getElementById('countViables').innerText = viables.length;
+      document.getElementById('countDiscarded').innerText = descartados.length;
+      document.getElementById('countTotal').innerText = BASE_TRASTORNOS.length;
+
+      const viableContainer = document.getElementById('viableContainer');
+      const discardedContainer = document.getElementById('discardedContainer');
+
+      viableContainer.innerHTML = '';
+      discardedContainer.innerHTML = '';
+
+      // Render Viables
+      if (viables.length === 0) {
+        viableContainer.innerHTML = `
+          <div class="p-4 bg-slate-100 rounded-lg border border-dashed border-slate-300 text-center text-slate-500 text-xs">
+            No hay trastornos compatibles con los criterios de tiempo y síntomas seleccionados.
+          </div>
+        `;
+      } else {
+        viables.forEach(t => {
+          const card = document.createElement('div');
+          card.className = "bg-white p-4 rounded-xl border border-emerald-200 shadow-sm relative overflow-hidden";
+          
+          card.innerHTML = `
+            <div class="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-bl-lg">
+              ${t.porcentaje}% Coincidencia
+            </div>
+            <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">${t.categoria}</div>
+            <h4 class="font-bold text-slate-900 text-base mb-1">${t.nombre}</h4>
+            <p class="text-xs text-slate-600 mb-3">${t.descripcion}</p>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg">
+              <span>Sintomatología compatible: <strong>${t.coincidenciasCount}</strong></span>
+              <span>Rango temporal: <strong>${t.duracion_min_dias}${t.duracion_max_dias ? ' - ' + t.duracion_max_dias : '+'} días</strong></span>
+            </div>
+          `;
+          viableContainer.appendChild(card);
+        });
+      }
+
+      // Render Descartados
+      if (descartados.length === 0) {
+        discardedContainer.innerHTML = `
+          <div class="p-3 bg-slate-50 rounded-lg text-center text-slate-400 text-xs">
+            Ningún trastorno descartado aún.
+          </div>
+        `;
+      } else {
+        descartados.forEach(t => {
+          const card = document.createElement('div');
+          card.className = "bg-white p-3 rounded-lg border border-slate-200 text-xs opacity-80 hover:opacity-100 transition";
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-bold text-slate-800">${t.nombre}</span>
+              <span class="text-[10px] font-semibold bg-rose-100 text-rose-800 px-2 py-0.5 rounded">Descartado</span>
+            </div>
+            <p class="text-rose-600 text-[11px] font-medium flex items-start gap-1">
+              <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0 mt-0.5"></i>
+              <span>${t.motivoExclusion}</span>
+            </p>
+          `;
+          discardedContainer.appendChild(card);
+        });
+      }
+
+      lucide.createIcons();
+    }
+
+    // Inicialización al cargar la ventana
+    window.onload = function() {
+      renderSymptomSelector();
+      evaluar();
+    };
+  </script>
+</body>
+</html>
